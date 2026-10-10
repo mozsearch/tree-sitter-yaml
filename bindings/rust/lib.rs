@@ -48,4 +48,18 @@ mod tests {
             .set_language(&super::LANGUAGE.into())
             .expect("Error loading YAML parser");
     }
+
+    #[test]
+    fn test_more_than_32767_lines() {
+        let mut parser = tree_sitter::Parser::new();
+        parser
+            .set_language(&super::LANGUAGE.into())
+            .expect("Error loading YAML parser");
+        let mut source = String::new();
+        for i in 0..20000 {
+            source.push_str(&format!("key{}:\n  value: {}\n", i, i));
+        }
+        let tree = parser.parse(&source, None).unwrap();
+        assert!(!tree.root_node().has_error());
+    }
 }

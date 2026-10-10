@@ -1,5 +1,6 @@
 #include "tree_sitter/array.h"
 #include "tree_sitter/parser.h"
+#include <string.h>
 
 #define _str(x) #x
 #define _file(x) _str(schema.x.c)
@@ -146,18 +147,19 @@ typedef enum {
 #endif
 
 typedef struct {
-    int16_t row;
+    // (Rows are 32-bit, for files of more than 32767 lines.)
+    int32_t row;
     int16_t col;
-    int16_t blk_imp_row;
+    int32_t blk_imp_row;
     int16_t blk_imp_col;
     int16_t blk_imp_tab;
     Array(int16_t) ind_typ_stk;
     Array(int16_t) ind_len_stk;
 
     // temp
-    int16_t end_row;
+    int32_t end_row;
     int16_t end_col;
-    int16_t cur_row;
+    int32_t cur_row;
     int16_t cur_col;
     int32_t cur_chr;
     int8_t sch_stt;
@@ -166,12 +168,12 @@ typedef struct {
 
 static unsigned serialize(Scanner *scanner, char *buffer) {
     size_t size = 0;
-    *(int16_t *)&buffer[size] = scanner->row;
-    size += sizeof(int16_t);
+    memcpy(&buffer[size], &scanner->row, sizeof(int32_t));
+    size += sizeof(int32_t);
     *(int16_t *)&buffer[size] = scanner->col;
     size += sizeof(int16_t);
-    *(int16_t *)&buffer[size] = scanner->blk_imp_row;
-    size += sizeof(int16_t);
+    memcpy(&buffer[size], &scanner->blk_imp_row, sizeof(int32_t));
+    size += sizeof(int32_t);
     *(int16_t *)&buffer[size] = scanner->blk_imp_col;
     size += sizeof(int16_t);
     *(int16_t *)&buffer[size] = scanner->blk_imp_tab;
@@ -200,12 +202,12 @@ static void deserialize(Scanner *scanner, const char *buffer, unsigned length) {
     array_push(&scanner->ind_len_stk, -1);
     if (length > 0) {
         size_t size = 0;
-        scanner->row = *(int16_t *)&buffer[size];
-        size += sizeof(int16_t);
+        memcpy(&scanner->row, &buffer[size], sizeof(int32_t));
+        size += sizeof(int32_t);
         scanner->col = *(int16_t *)&buffer[size];
         size += sizeof(int16_t);
-        scanner->blk_imp_row = *(int16_t *)&buffer[size];
-        size += sizeof(int16_t);
+        memcpy(&scanner->blk_imp_row, &buffer[size], sizeof(int32_t));
+        size += sizeof(int32_t);
         scanner->blk_imp_col = *(int16_t *)&buffer[size];
         size += sizeof(int16_t);
         scanner->blk_imp_tab = *(int16_t *)&buffer[size];
@@ -887,7 +889,7 @@ static bool scan(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
         return false;
     }
 
-    int16_t bgn_row = scanner->cur_row;
+    int32_t bgn_row = scanner->cur_row;
     int16_t bgn_col = scanner->cur_col;
     int32_t bgn_chr = lexer->lookahead;
 

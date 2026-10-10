@@ -9,6 +9,10 @@
 
 A tree-sitter parser for YAML files.
 
+This is [searchfox](https://searchfox.org/)'s fork, whose scanner keeps rows
+in 32 bits so that files of more than 32767 lines parse (ex: Firefox's
+dom/base/use_counter_metrics.yaml).
+
 ## References
 
 - [YAML version 1.2](https://yaml.org/spec/1.2.2/)
